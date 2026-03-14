@@ -4,10 +4,12 @@ from udp_protocol import *
 FILES_DIR = "server_files"
 os.makedirs(FILES_DIR, exist_ok=True)
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+# Обязательно увеличим буферы для скорости
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 16 * 1024 * 1024)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 16 * 1024 * 1024)
 sock.bind(('0.0.0.0', DEFAULT_PORT))
 
 print(f"[SERVER] Запущен на {DEFAULT_PORT}")
-
 
 while True:
     try:
@@ -30,6 +32,5 @@ while True:
                 print(f"[SERVER] Передача завершена.")
             else:
                 sock.sendto(b"ERROR: FILE NOT FOUND", addr)
-
     except Exception as e:
         print(f"[SERVER] Ошибка: {e}")

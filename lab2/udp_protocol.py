@@ -14,6 +14,9 @@ class SlidingWindowSender:
         self.sock.setblocking(False)
 
     def send(self, data):
+        # 1. Включаем скоростной неблокирующий режим
+        self.sock.setblocking(False)
+
         chunks = [data[i:i + PAYLOAD_SIZE] for i in range(0, len(data), PAYLOAD_SIZE)]
         n = len(chunks)
         base = 0
@@ -33,7 +36,8 @@ class SlidingWindowSender:
 
             try:
                 raw, _ = self.sock.recvfrom(64)
-                t, _, _, ack_seq, _ = struct.unpack(HEADER_FMT, raw[:HEADER_SIZE])
+                # Распаковка заголовка (seq находится на 4-й позиции)
+                _, _, _, ack_seq, _ = struct.unpack(HEADER_FMT, raw[:HEADER_SIZE])
                 if ack_seq >= base:
                     base = ack_seq + 1
                     if base % 100 == 0: print(f"[SENDER] Прогресс: {base}/{n}")
@@ -42,6 +46,9 @@ class SlidingWindowSender:
 
         for _ in range(10): self.sock.sendto(struct.pack(HEADER_FMT, PACKET_TYPE_FIN, 0, 0, 0, 0), self.addr)
         print("[SENDER] Передача завершена")
+
+        # 2. ВОЗВРАЩАЕМ БЛОКИРУЮЩИЙ РЕЖИМ для корректной работы сервера
+        self.sock.setblocking(True)
 
 
 class SlidingWindowReceiver:
