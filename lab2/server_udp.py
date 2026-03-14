@@ -19,7 +19,6 @@ while True:
         if t in (PACKET_TYPE_DATA, PACKET_TYPE_FIN, PACKET_TYPE_ACK):
             continue
 
-        # Пытаемся декодировать как команду
         cmd_str = raw.decode(errors='ignore').strip()
         cmd_parts = cmd_str.split(None, 1)
         if not cmd_parts: continue
@@ -30,11 +29,11 @@ while True:
         print(f"[SERVER] Запрос от {addr}: {cmd} {args}")
 
         if cmd == "ECHO":
-            sock.setblocking(True)  # Убеждаемся, что мы в блокирующем режиме
+            sock.setblocking(True)
             sock.sendto(f"ECHO: {args}".encode(), addr)
 
         elif cmd == "TIME":
-            sock.setblocking(True)  # Убеждаемся, что мы в блокирующем режиме
+            sock.setblocking(True)
             now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             sock.sendto(f"TIME: {now}".encode(), addr)
 
@@ -52,7 +51,6 @@ while True:
                 sock.sendto(b"ERROR: FILE NOT FOUND", addr)
 
         elif cmd == "UPLOAD":
-            # Ожидаем формат UPLOAD filename size
             parts = args.split()
             if len(parts) < 2:
                 sock.sendto(b"ERROR: INVALID UPLOAD FORMAT", addr)

@@ -5,7 +5,7 @@ PACKET_TYPE_ACK = 2
 PACKET_TYPE_FIN = 5
 HEADER_FMT = "!BBHII"
 HEADER_SIZE = struct.calcsize(HEADER_FMT)
-PAYLOAD_SIZE = 1400  # Уменьшил для теста до MTU, чтобы точно прошло через все роутеры
+PAYLOAD_SIZE = 1400
 DEFAULT_PORT = 9091
 
 class SlidingWindowSender:
@@ -14,7 +14,6 @@ class SlidingWindowSender:
         self.sock.setblocking(False)
 
     def send(self, data):
-        # 1. Включаем скоростной неблокирующий режим
         self.sock.setblocking(False)
 
         chunks = [data[i:i + PAYLOAD_SIZE] for i in range(0, len(data), PAYLOAD_SIZE)]
@@ -36,7 +35,6 @@ class SlidingWindowSender:
 
             try:
                 raw, _ = self.sock.recvfrom(64)
-                # Распаковка заголовка (seq находится на 4-й позиции)
                 _, _, _, ack_seq, _ = struct.unpack(HEADER_FMT, raw[:HEADER_SIZE])
                 if ack_seq >= base:
                     base = ack_seq + 1
@@ -47,7 +45,6 @@ class SlidingWindowSender:
         for _ in range(10): self.sock.sendto(struct.pack(HEADER_FMT, PACKET_TYPE_FIN, 0, 0, 0, 0), self.addr)
         print("[SENDER] Передача завершена")
 
-        # 2. ВОЗВРАЩАЕМ БЛОКИРУЮЩИЙ РЕЖИМ для корректной работы сервера
         self.sock.setblocking(True)
 
 
@@ -70,15 +67,10 @@ class SlidingWindowReceiver:
 
                 if seq not in buf:
                     buf[seq] = raw[HEADER_SIZE:HEADER_SIZE + length]
-                    # Отправляем ACK сразу.
-                    # Важно: ACK шлем не на каждый пакет, а пакет с seq,
-                    # чтобы отправитель не тормозил.
                     self.sock.sendto(struct.pack(HEADER_FMT, PACKET_TYPE_ACK, 0, 0, seq, 0), addr)
 
-                # Собираем данные
                 while expected in buf:
                     chunk = buf.pop(expected)
-                    # ИСПРАВЛЕНИЕ: прибавляем длину РЕАЛЬНОГО полученного куска
                     received_bytes += len(chunk)
                     data.extend(chunk)
                     expected += 1
