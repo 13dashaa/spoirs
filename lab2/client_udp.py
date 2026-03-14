@@ -67,4 +67,6 @@ while True:
             sender.send(data)
 
             elapsed = time.monotonic() - start
-            print(f"[CLIENT] Успешно! Скорость: {(size / 1024) / elapsed:.2f} КБ/с")
+            print(f"[CLIENT] Успешно! Передано: {size}, Скорость: {(size / 1024) / elapsed:.2f} КБ/с")
+            print(f"[CLIENT] Время: {elapsed:.2f} сек.")
+

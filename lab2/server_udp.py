@@ -14,9 +14,23 @@ print(f"[SERVER] Запущен на {DEFAULT_PORT}")
 while True:
     try:
         raw, addr = sock.recvfrom(4096)
-        cmd = raw.decode().split()
-        if not cmd: continue
 
+        # 1. Проверяем тип пакета по первому байту (не декодируя его)
+        t = raw[0]
+
+        # 2. Если это ПАКЕТ ДАННЫХ (1) или ФИНАЛ (5),
+        # то это СЛУЖЕБНЫЕ ПАКЕТЫ, они не должны попасть в обработчик команд.
+        # Просто игнорируем их в главном цикле (они будут перехвачены функциями send/receive)
+        if t == PACKET_TYPE_DATA or t == PACKET_TYPE_FIN or t == PACKET_TYPE_ACK:
+            continue
+
+            # 3. Если это КОМАНДА (она обычно текстовая), декодируем
+        try:
+            cmd = raw.decode(errors='ignore').split()
+        except:
+            continue
+
+        if not cmd: continue
         print(f"[SERVER] Запрос от {addr}: {cmd}")
 
         if cmd[0] == "DOWNLOAD":
