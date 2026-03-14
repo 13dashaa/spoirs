@@ -6,7 +6,7 @@ PACKET_TYPE_FIN = 5
 HEADER_FMT = "!BBHII"
 HEADER_SIZE = struct.calcsize(HEADER_FMT)
 PAYLOAD_SIZE = 1400  # Уменьшил для теста до MTU, чтобы точно прошло через все роутеры
-
+DEFAULT_PORT = 9091
 
 class SlidingWindowSender:
     def __init__(self, sock, addr):
