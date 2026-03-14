@@ -78,5 +78,11 @@ while True:
 
     elif cmd[0] == "TIME":
         sock.sendto(b"TIME", server)
-        resp, _ = sock.recvfrom(1024)
-        print(f"[SERVER]: {resp.decode()}")
+        sock.settimeout(2.0)  # Ждем максимум 2 секунды
+        try:
+            resp, _ = sock.recvfrom(1024)
+            print(f"[SERVER ответ]: {resp.decode()}")
+        except socket.timeout:
+            print("[CLIENT] Ошибка: Сервер не ответил на команду TIME")
+        finally:
+            sock.settimeout(None)  # Сбрасываем таймаут

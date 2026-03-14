@@ -30,9 +30,11 @@ while True:
         print(f"[SERVER] Запрос от {addr}: {cmd} {args}")
 
         if cmd == "ECHO":
+            sock.setblocking(True)  # Убеждаемся, что мы в блокирующем режиме
             sock.sendto(f"ECHO: {args}".encode(), addr)
 
         elif cmd == "TIME":
+            sock.setblocking(True)  # Убеждаемся, что мы в блокирующем режиме
             now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             sock.sendto(f"TIME: {now}".encode(), addr)
 
