@@ -8,6 +8,7 @@ sock.bind(('0.0.0.0', DEFAULT_PORT))
 
 print(f"[SERVER] Запущен на {DEFAULT_PORT}")
 
+
 while True:
     try:
         raw, addr = sock.recvfrom(4096)
