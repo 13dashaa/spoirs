@@ -1,14 +1,11 @@
 import socket, struct, time
 
-from lab1.tcp_client import DEFAULT_PORT
-
 PACKET_TYPE_DATA = 1
 PACKET_TYPE_ACK = 2
 PACKET_TYPE_FIN = 5
 HEADER_FMT = "!BBHII"
 HEADER_SIZE = struct.calcsize(HEADER_FMT)
-PAYLOAD_SIZE = 32000
-DEFAULT_PORT = 9091
+PAYLOAD_SIZE = 1400  # Уменьшил для теста до MTU, чтобы точно прошло через все роутеры
 
 
 class SlidingWindowSender:
@@ -23,6 +20,7 @@ class SlidingWindowSender:
         next_seq = 0
         window = 100
 
+        print(f"[SENDER] Всего {n} пакетов")
         while base < n:
             while next_seq < base + window and next_seq < n:
                 pkt = struct.pack(HEADER_FMT, PACKET_TYPE_DATA, 0, 0, next_seq, len(chunks[next_seq])) + chunks[
@@ -32,15 +30,18 @@ class SlidingWindowSender:
                     next_seq += 1
                 except:
                     break
+
             try:
                 raw, _ = self.sock.recvfrom(64)
                 t, _, _, ack_seq, _ = struct.unpack(HEADER_FMT, raw[:HEADER_SIZE])
-                if ack_seq >= base: base = ack_seq + 1
+                if ack_seq >= base:
+                    base = ack_seq + 1
+                    if base % 100 == 0: print(f"[SENDER] Прогресс: {base}/{n}")
             except:
                 time.sleep(0.001)
 
-        # FIN пакеты
         for _ in range(10): self.sock.sendto(struct.pack(HEADER_FMT, PACKET_TYPE_FIN, 0, 0, 0, 0), self.addr)
+        print("[SENDER] Передача завершена")
 
 
 class SlidingWindowReceiver:
@@ -53,25 +54,29 @@ class SlidingWindowReceiver:
         expected = 0
         received_bytes = 0
         data = bytearray()
+        last_report = time.time()
 
         while received_bytes < self.total:
             try:
                 raw, addr = self.sock.recvfrom(65536)
                 t, _, _, seq, length = struct.unpack(HEADER_FMT, raw[:HEADER_SIZE])
+
                 if t == PACKET_TYPE_FIN: break
 
-                # Сохраняем пакет
                 if seq not in buf:
                     buf[seq] = raw[HEADER_SIZE:HEADER_SIZE + length]
-                    # Шлем ACK только на тот пакет, что получили
                     self.sock.sendto(struct.pack(HEADER_FMT, PACKET_TYPE_ACK, 0, 0, seq, 0), addr)
 
-                # Собираем данные
                 while expected in buf:
                     chunk = buf.pop(expected)
                     data.extend(chunk)
                     received_bytes += len(chunk)
                     expected += 1
+
+                if time.time() - last_report > 1:
+                    print(f"[RECEIVER] Принято {received_bytes} / {self.total} байт")
+                    last_report = time.time()
             except:
                 continue
         return bytes(data)
+
