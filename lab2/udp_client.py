@@ -24,8 +24,9 @@ PACKET_TYPE_ERROR = 0x05
 
 def run_client(filename_to_download):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    # Увеличиваем буфер приема до 2 МБ
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 1024 * 1024 * 2)
     sock.settimeout(CLIENT_TIMEOUT)
-
     try:
         # 1. Отправляем запрос на файл
         start_packet = struct.pack(f">B{len(filename_to_download)}s", PACKET_TYPE_START, filename_to_download.encode())
