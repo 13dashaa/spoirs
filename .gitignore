@@ -22,6 +22,6 @@
 #**/server_files/
 **/sessions/
 **/downloads/
-**/*.bin
+#**/*.bin
 **/*.log
 **/*.session

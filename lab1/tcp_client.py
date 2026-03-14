@@ -9,7 +9,7 @@ import struct
 import time
 
 # ─── Константы ────────────────────────────────────────────────────────────────
-DEFAULT_HOST = "127.0.0.1"
+DEFAULT_HOST = "192.168.10.102"
 DEFAULT_PORT = 9090
 BUFFER_SIZE = 4096
 DOWNLOAD_DIR = "downloads"  # Папка для скачанных файлов
