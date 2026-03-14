@@ -1,12 +1,14 @@
 import socket, struct, time
 
+from lab1.tcp_client import DEFAULT_PORT
+
 PACKET_TYPE_DATA = 1
 PACKET_TYPE_ACK = 2
 PACKET_TYPE_FIN = 5
-HEADER_FMT = "!BBHII"  # Type, Flags, Window, Seq, Length
+HEADER_FMT = "!BBHII"
 HEADER_SIZE = struct.calcsize(HEADER_FMT)
+PAYLOAD_SIZE = 32000
 DEFAULT_PORT = 9091
-PAYLOAD_SIZE = 32000  # Оптимально для Python-UDP
 
 
 class SlidingWindowSender:
@@ -20,24 +22,25 @@ class SlidingWindowSender:
         base = 0
         next_seq = 0
         window = 100
-        start = time.monotonic()
 
         while base < n:
             while next_seq < base + window and next_seq < n:
                 pkt = struct.pack(HEADER_FMT, PACKET_TYPE_DATA, 0, 0, next_seq, len(chunks[next_seq])) + chunks[
                     next_seq]
-                self.sock.sendto(pkt, self.addr)
-                next_seq += 1
+                try:
+                    self.sock.sendto(pkt, self.addr)
+                    next_seq += 1
+                except:
+                    break
             try:
                 raw, _ = self.sock.recvfrom(64)
-                ack_seq = struct.unpack(HEADER_FMT, raw[:HEADER_SIZE])[3]
+                t, _, _, ack_seq, _ = struct.unpack(HEADER_FMT, raw[:HEADER_SIZE])
                 if ack_seq >= base: base = ack_seq + 1
             except:
                 time.sleep(0.001)
 
-        # FIN пакет
-        for _ in range(5): self.sock.sendto(struct.pack(HEADER_FMT, PACKET_TYPE_FIN, 0, 0, 0, 0), self.addr)
-        return len(data), time.monotonic() - start
+        # FIN пакеты
+        for _ in range(10): self.sock.sendto(struct.pack(HEADER_FMT, PACKET_TYPE_FIN, 0, 0, 0, 0), self.addr)
 
 
 class SlidingWindowReceiver:
@@ -50,18 +53,25 @@ class SlidingWindowReceiver:
         expected = 0
         received_bytes = 0
         data = bytearray()
+
         while received_bytes < self.total:
             try:
                 raw, addr = self.sock.recvfrom(65536)
                 t, _, _, seq, length = struct.unpack(HEADER_FMT, raw[:HEADER_SIZE])
                 if t == PACKET_TYPE_FIN: break
-                if seq >= expected:
+
+                # Сохраняем пакет
+                if seq not in buf:
                     buf[seq] = raw[HEADER_SIZE:HEADER_SIZE + length]
-                    while expected in buf:
-                        data.extend(buf.pop(expected))
-                        received_bytes += len(data)  # Упрощенно
-                        expected += 1
-                    self.sock.sendto(struct.pack(HEADER_FMT, PACKET_TYPE_ACK, 0, 0, expected - 1, 0), addr)
+                    # Шлем ACK только на тот пакет, что получили
+                    self.sock.sendto(struct.pack(HEADER_FMT, PACKET_TYPE_ACK, 0, 0, seq, 0), addr)
+
+                # Собираем данные
+                while expected in buf:
+                    chunk = buf.pop(expected)
+                    data.extend(chunk)
+                    received_bytes += len(chunk)
+                    expected += 1
             except:
                 continue
         return bytes(data)

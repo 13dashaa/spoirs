@@ -1,4 +1,4 @@
-import socket, threading, os
+import socket, threading, os, time
 from udp_protocol import *
 
 FILES_DIR = "server_files"
@@ -6,17 +6,29 @@ os.makedirs(FILES_DIR, exist_ok=True)
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind(('0.0.0.0', DEFAULT_PORT))
 
-def handle():
-    while True:
+print(f"[SERVER] Запущен на {DEFAULT_PORT}")
+
+while True:
+    try:
         raw, addr = sock.recvfrom(4096)
         cmd = raw.decode().split()
+        if not cmd: continue
+
+        print(f"[SERVER] Запрос от {addr}: {cmd}")
+
         if cmd[0] == "DOWNLOAD":
             path = os.path.join(FILES_DIR, cmd[1])
-            size = os.path.getsize(path)
-            sock.sendto(f"SIZE {size}".encode(), addr)
-            data = open(path, "rb").read()
-            sender = SlidingWindowSender(sock, addr)
-            sender.send(data)
+            if os.path.exists(path):
+                size = os.path.getsize(path)
+                sock.sendto(f"SIZE {size}".encode(), addr)
+                data = open(path, "rb").read()
 
-threading.Thread(target=handle, daemon=True).start()
-input("Сервер запущен. Нажми Enter для выхода.\n")
+                print(f"[SERVER] Начинаю передачу {cmd[1]}...")
+                sender = SlidingWindowSender(sock, addr)
+                sender.send(data)
+                print(f"[SERVER] Передача завершена.")
+            else:
+                sock.sendto(b"ERROR: FILE NOT FOUND", addr)
+
+    except Exception as e:
+        print(f"[SERVER] Ошибка: {e}")
