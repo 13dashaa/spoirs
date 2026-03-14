@@ -49,7 +49,37 @@ while True:
             with open(f"down_{user_input.split()[1]}", "wb") as f:
                 f.write(data)
             print(f"[CLIENT] Успешно! Время: {elapsed:.2f} сек. Скорость: {(len(data) / 1024) / elapsed:.2f} КБ/с")
+        elif user_input.upper().startswith("UPLOAD"):
+            parts = user_input.split()
+            filename = parts[1]
+            data = open(filename, "rb").read()
+            size = len(data)
 
+            # 1. Отправляем команду серверу
+            sock.sendto(f"UPLOAD {filename} {size}".encode(), server)
+
+            # 2. Ждем ответ "READY"
+            sock.settimeout(5.0)
+            resp, _ = sock.recvfrom(1024)
+
+            if resp == b"READY":
+                print(f"[CLIENT] Отправляю {size} байт...")
+                start = time.monotonic()
+
+                # 3. Отправляем файл чанками прямо здесь (без классов)
+                chunks = [data[i:i + 1400] for i in range(0, len(data), 1400)]
+                for i, chunk in enumerate(chunks):
+                    # Формируем пакет: тип 1 (DATA), seq=i, length=len(chunk)
+                    pkt = pack_pkt(PACKET_TYPE_DATA, i, len(chunk), chunk)
+                    sock.sendto(pkt, server)
+                    # Маленькая пауза, чтобы не "задушить" сервер
+                    if i % 100 == 0: time.sleep(0.001)
+
+                    # 4. Шлем FIN
+                sock.sendto(pack_pkt(PACKET_TYPE_FIN, 0, 0), server)
+
+                elapsed = time.monotonic() - start
+                print(f"[CLIENT] Успешно! Время: {elapsed:.2f} сек. Скорость: {(size / 1024) / elapsed:.2f} КБ/с")
         # Если это ECHO или TIME, просто печатаем ответ
         else:
             sock.settimeout(2.0)
