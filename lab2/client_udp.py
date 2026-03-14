@@ -69,4 +69,14 @@ while True:
             elapsed = time.monotonic() - start
             print(f"[CLIENT] Успешно! Передано: {size}, Скорость: {(size / 1024) / elapsed:.2f} КБ/с")
             print(f"[CLIENT] Время: {elapsed:.2f} сек.")
+    elif cmd[0] == "ECHO":
+        # Отправляем весь остаток строки как аргумент
+        msg = " ".join(cmd[1:])
+        sock.sendto(f"ECHO {msg}".encode(), server)
+        resp, _ = sock.recvfrom(1024)
+        print(f"[SERVER]: {resp.decode()}")
 
+    elif cmd[0] == "TIME":
+        sock.sendto(b"TIME", server)
+        resp, _ = sock.recvfrom(1024)
+        print(f"[SERVER]: {resp.decode()}")

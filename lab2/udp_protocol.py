@@ -77,8 +77,10 @@ class SlidingWindowReceiver:
 
                 # Собираем данные
                 while expected in buf:
-                    data.extend(buf.pop(expected))
-                    received_bytes += PAYLOAD_SIZE  # Используем PAYLOAD_SIZE для расчета
+                    chunk = buf.pop(expected)
+                    # ИСПРАВЛЕНИЕ: прибавляем длину РЕАЛЬНОГО полученного куска
+                    received_bytes += len(chunk)
+                    data.extend(chunk)
                     expected += 1
             except:
                 continue
