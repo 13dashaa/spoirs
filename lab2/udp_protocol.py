@@ -61,29 +61,25 @@ class SlidingWindowReceiver:
         expected = 0
         received_bytes = 0
         data = bytearray()
-        last_report = time.time()
 
         while received_bytes < self.total:
             try:
                 raw, addr = self.sock.recvfrom(65536)
                 t, _, _, seq, length = struct.unpack(HEADER_FMT, raw[:HEADER_SIZE])
-
                 if t == PACKET_TYPE_FIN: break
 
                 if seq not in buf:
                     buf[seq] = raw[HEADER_SIZE:HEADER_SIZE + length]
+                    # Отправляем ACK сразу.
+                    # Важно: ACK шлем не на каждый пакет, а пакет с seq,
+                    # чтобы отправитель не тормозил.
                     self.sock.sendto(struct.pack(HEADER_FMT, PACKET_TYPE_ACK, 0, 0, seq, 0), addr)
 
+                # Собираем данные
                 while expected in buf:
-                    chunk = buf.pop(expected)
-                    data.extend(chunk)
-                    received_bytes += len(chunk)
+                    data.extend(buf.pop(expected))
+                    received_bytes += PAYLOAD_SIZE  # Используем PAYLOAD_SIZE для расчета
                     expected += 1
-
-                if time.time() - last_report > 1:
-                    print(f"[RECEIVER] Принято {received_bytes} / {self.total} байт")
-                    last_report = time.time()
             except:
                 continue
         return bytes(data)
-
