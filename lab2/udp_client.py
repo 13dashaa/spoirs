@@ -8,7 +8,7 @@ import struct
 import time
 
 # ─── Константы ────────────────────────────────────────────────────────────────
-SERVER_HOST = "127.0.0.1"
+SERVER_HOST = "192.168.10.102"
 SERVER_PORT = 9091
 BUFFER_SIZE = 2048  # Буфер должен вмещать самый большой пакет
 DOWNLOAD_DIR = "downloads"

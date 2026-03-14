@@ -81,7 +81,7 @@ def do_upload(s, filepath):
     elapsed = time.monotonic() - start_time or 0.001
     bitrate = (total_size - offset) / elapsed / 1024
     print(f"\n[CLIENT] Ответ сервера: {result}")
-    print(f"[CLIENT] Эффективная скорость: {bitrate:.1f} КБ/с")
+    print(f"[CLIENT] Время отправки: {elapsed:.2f} сек, Эффективная скорость: {bitrate:.1f} КБ/с")
 
 
 def do_download(s, filename):
@@ -116,7 +116,7 @@ def do_download(s, filename):
 
     elapsed = time.monotonic() - start_time or 0.001
     bitrate = (total_size - offset) / elapsed / 1024
-    print(f"\n[CLIENT] Файл '{local_path}' скачан. Скорость: {bitrate:.1f} КБ/с")
+    print(f"\n[CLIENT] Файл '{local_path}' скачан. Время: {elapsed:.2f} сек, Скорость: {bitrate:.1f} КБ/с")
 
 
 # ─── Логика переподключения ────────────────────────────────────────────────────
